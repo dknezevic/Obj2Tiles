@@ -4,3 +4,7 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 .vs/
+/Obj2Tiles/Properties/launchSettings.json
+/output
+/models
+*.user

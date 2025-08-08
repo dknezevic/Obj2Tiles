@@ -11,12 +11,12 @@ namespace Obj2Tiles.Stages;
 
 public static partial class StagesFacade
 {
-    public static void Tile(string sourcePath, string destPath, int lods, double baseError, Dictionary<string, Box3>[] boundsMapper,
+    public static void Tile(string sourcePath, string destPath, int lods, bool isOctree, double baseError, Dictionary<string, Box3>[] boundsMapper,
         GpsCoords? coords = null)
     {
 
         Console.WriteLine(" ?> Working on objs conversion");
-        
+
         ConvertAllB3dm(sourcePath, destPath, lods);
 
         Console.WriteLine(" -> Generating tileset.json");
@@ -26,7 +26,7 @@ public static partial class StagesFacade
             Console.WriteLine(" ?> Using default coordinates");
             coords = DefaultGpsCoords;
         }
-       
+
         // Don't ask me why 100, I have no idea but it works
         // https://github.com/CesiumGS/3d-tiles/issues/162
         //const int baseError = 100;
@@ -53,18 +53,40 @@ public static partial class StagesFacade
         var maxZ = double.MinValue;
         var minZ = double.MaxValue;
 
-        var masterDescriptors = boundsMapper[0].Keys;
-        
-        foreach (var descriptor in masterDescriptors)
+        if (isOctree)
         {
-            var currentTileElement = tileset.Root;
-            
-            var refBox = boundsMapper[0][descriptor];
+            //TODO @dknezevic this should be done recursively
 
-            for (var lod = lods - 1; lod >= 0; lod--)
+            // Create a map of LODs and their bounding boxes
+            Dictionary<string, string[]> lodChildrenMap = new Dictionary<string, string[]>();
+            for (var lod = lods - 1; lod > 0; lod--)
             {
-                if (boundsMapper[lod].TryGetValue(descriptor, out Box3? box3))
+                foreach (string key in boundsMapper[lod].Keys)
                 {
+                    var higherLodParts = boundsMapper[lod - 1]
+                        .Where(bm => bm.Key.StartsWith(key))
+                        .Select(bm => bm.Key)
+                        .ToArray();
+                    lodChildrenMap.Add(key, higherLodParts);
+                }
+            }
+
+            // Create a map of children to their parent tiles
+            Dictionary<string, string> lodParentMap = lodChildrenMap
+                .SelectMany(kv => kv.Value.Select(child => new { child, parent = kv.Key }))
+                .ToDictionary(x => x.child, x => x.parent);
+
+            //used for a quick access to existing parent tiles when adding children
+            Dictionary<string, TileElement> tileMap = new Dictionary<string, TileElement>();
+
+            int currentLod = boundsMapper.Length - 1;
+
+            while (currentLod >= 0)
+            {
+                foreach (var descriptor in boundsMapper[currentLod].Keys)
+                {
+                    Box3 box3 = boundsMapper[currentLod][descriptor];
+
                     if (box3.Min.X < minX)
                         minX = box3.Min.X;
 
@@ -85,18 +107,81 @@ public static partial class StagesFacade
 
                     var tile = new TileElement
                     {
-                        GeometricError = lod == 0 ? 0 : CalculateGeometricError(refBox, box3, lod),
+                        GeometricError = currentLod == 0 ? 0 : baseError / Math.Pow(2, lods - currentLod), //use a geometric error based on the LOD level
                         Refine = "REPLACE",
                         Children = new List<TileElement>(),
                         Content = new Content
                         {
-                            Uri = $"LOD-{lod}/{Path.GetFileNameWithoutExtension(descriptor)}.b3dm"
+                            Uri = $"LOD-{currentLod}/{Path.GetFileNameWithoutExtension(descriptor)}.b3dm"
                         },
                         BoundingVolume = box3.ToBoundingVolume()
                     };
 
-                    currentTileElement.Children.Add(tile);
-                    currentTileElement = tile;
+                    if (currentLod > 0) //we dont need tile map for LOD0
+                    {
+                        tileMap.Add(descriptor, tile);
+                    }
+
+                    if (lodParentMap.TryGetValue(descriptor, out string? value))
+                    {
+                        tileMap[value].Children.Add(tile);
+                    }
+                    else
+                    {
+                        tileset.Root.Children.Add(tile);
+                    }
+                }
+
+                currentLod--;
+            }
+        }
+        else
+        {
+            var masterDescriptors = boundsMapper[0].Keys;
+
+            foreach (var descriptor in masterDescriptors)
+            {
+                var currentTileElement = tileset.Root;
+
+                var refBox = boundsMapper[0][descriptor];
+
+                for (var lod = lods - 1; lod >= 0; lod--)
+                {
+                    if (boundsMapper[lod].TryGetValue(descriptor, out Box3? box3))
+                    {
+                        if (box3.Min.X < minX)
+                            minX = box3.Min.X;
+
+                        if (box3.Max.X > maxX)
+                            maxX = box3.Max.X;
+
+                        if (box3.Min.Y < minY)
+                            minY = box3.Min.Y;
+
+                        if (box3.Max.Y > maxY)
+                            maxY = box3.Max.Y;
+
+                        if (box3.Min.Z < minZ)
+                            minZ = box3.Min.Z;
+
+                        if (box3.Max.Z > maxZ)
+                            maxZ = box3.Max.Z;
+
+                        var tile = new TileElement
+                        {
+                            GeometricError = lod == 0 ? 0 : CalculateGeometricError(refBox, box3, lod),
+                            Refine = "REPLACE",
+                            Children = new List<TileElement>(),
+                            Content = new Content
+                            {
+                                Uri = $"LOD-{lod}/{Path.GetFileNameWithoutExtension(descriptor)}.b3dm"
+                            },
+                            BoundingVolume = box3.ToBoundingVolume()
+                        };
+
+                        currentTileElement.Children.Add(tile);
+                        currentTileElement = tile;
+                    }
                 }
             }
         }
@@ -116,7 +201,7 @@ public static partial class StagesFacade
         var dW = Math.Abs(refBox.Width - box.Width) / box.Width + 1;
         var dH = Math.Abs(refBox.Height - box.Height) / box.Height + 1;
         var dD = Math.Abs(refBox.Depth - box.Depth) / box.Depth + 1;
-       
+
         return Math.Pow(dW + dH + dD, lod);
 
     }

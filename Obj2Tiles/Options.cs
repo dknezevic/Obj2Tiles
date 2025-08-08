@@ -49,6 +49,12 @@ public sealed class Options
 
     [Option('t', "y-up-to-z-up", Required = false, HelpText = "Convert the upward Y-axis to the upward Z-axis, which is used in some situations where the upward axis may be the Y-axis or the Z-axis after the obj is exported.", Default = false)]
     public bool YUpToZUp { get; set; }
+
+    [Option("split-quality", Required = false, HelpText = "Split quliaty of every subsequent LOD during the decimation process.", Default = false)]
+    public bool SplitQuality { get; set; }
+
+    [Option("octree", Required = false, HelpText = "Create Octree structure.", Default = false)]
+    public bool Octree { get; set; }
 }
 
 public enum Stage

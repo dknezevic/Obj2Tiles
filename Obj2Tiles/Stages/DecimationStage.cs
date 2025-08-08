@@ -9,10 +9,12 @@ namespace Obj2Tiles.Stages;
 
 public static partial class StagesFacade
 {
-    public static async Task<DecimateResult> Decimate(string sourcePath, string destPath, int lods)
+    public static async Task<DecimateResult> Decimate(string sourcePath, string destPath, int lods, bool splitQuality = false)
     {
-        
-        var qualities = Enumerable.Range(0, lods - 1).Select(i => 1.0f - ((i + 1) / (float)lods)).ToArray();
+
+        var qualities = splitQuality ?
+            Enumerable.Range(0, lods - 1).Select(i => 1.0f / (float)Math.Pow(2,(i + 1))).ToArray(): 
+            Enumerable.Range(0, lods - 1).Select(i => 1.0f - ((i + 1) / (float)lods)).ToArray();
 
         var sourceObjMesh = new ObjMesh();
         sourceObjMesh.ReadFile(sourcePath);
@@ -25,7 +27,7 @@ public static partial class StagesFacade
         var destFiles = new List<string> { originalSourceFile };
 
         var tasks = new List<Task>();
-        
+
         for (var index = 0; index < qualities.Length; index++)
         {
             var quality = qualities[index];
@@ -37,13 +39,13 @@ public static partial class StagesFacade
             Console.WriteLine(" -> Decimating mesh {0} with quality {1:0.00}", fileName, quality);
 
             tasks.Add(Task.Run(() => InternalDecimate(sourceObjMesh, destFile, quality)));
-            
+
             destFiles.Add(destFile);
         }
 
         await Task.WhenAll(tasks);
         Console.WriteLine(" ?> Decimation done");
-        
+
         Console.WriteLine(" -> Copying obj dependencies");
         Utils.CopyObjDependencies(sourcePath, destPath);
         Console.WriteLine(" ?> Dependencies copied");

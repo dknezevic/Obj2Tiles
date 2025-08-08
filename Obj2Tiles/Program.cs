@@ -58,7 +58,7 @@ namespace Obj2Tiles
                 Console.WriteLine($" => Decimation stage with {opts.LODs} LODs");
                 sw.Start();
 
-                var decimateRes = await StagesFacade.Decimate(opts.Input, destFolderDecimation, opts.LODs);
+                var decimateRes = await StagesFacade.Decimate(opts.Input, destFolderDecimation, opts.LODs, opts.SplitQuality);
 
                 Console.WriteLine(" ?> Decimation stage done in {0}", sw.Elapsed);
 
@@ -74,7 +74,7 @@ namespace Obj2Tiles
                     : createTempFolder($"{pipelineId}-obj2tiles-split");
 
                 var boundsMapper = await StagesFacade.Split(decimateRes.DestFiles, destFolderSplit, opts.Divisions,
-                    opts.ZSplit, decimateRes.Bounds, opts.KeepOriginalTextures);
+                    opts.ZSplit, opts.Octree, decimateRes.Bounds, opts.KeepOriginalTextures);
 
                 Console.WriteLine(" ?> Splitting stage done in {0}", sw.Elapsed);
 
@@ -95,7 +95,7 @@ namespace Obj2Tiles
 
                 sw.Restart();
 
-                StagesFacade.Tile(destFolderSplit, opts.Output, opts.LODs, opts.BaseError, boundsMapper, gpsCoords);
+                StagesFacade.Tile(destFolderSplit, opts.Output, opts.LODs, opts.Octree, opts.BaseError, boundsMapper, gpsCoords);
 
                 Console.WriteLine(" ?> Tiling stage done in {0}", sw.Elapsed);
             }
