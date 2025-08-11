@@ -9,11 +9,11 @@ namespace Obj2Tiles.Stages;
 
 public static partial class StagesFacade
 {
-    public static async Task<DecimateResult> Decimate(string sourcePath, string destPath, int lods, bool splitQuality = false)
+    public static async Task<DecimateResult> Decimate(string sourcePath, string destPath, int lods, bool useQEM = false, bool splitQuality = false)
     {
 
         var qualities = splitQuality ?
-            Enumerable.Range(0, lods - 1).Select(i => 1.0f / (float)Math.Pow(4,(i + 1))).ToArray(): 
+            Enumerable.Range(0, lods - 1).Select(i => 1.0f / (float)Math.Pow(4, (i + 1))).ToArray() :
             Enumerable.Range(0, lods - 1).Select(i => 1.0f - ((i + 1) / (float)lods)).ToArray();
 
         var sourceObjMesh = new ObjMesh();
@@ -38,7 +38,7 @@ public static partial class StagesFacade
 
             Console.WriteLine(" -> Decimating mesh {0} with quality {1:0.0000}", fileName, quality);
 
-            tasks.Add(Task.Run(() => InternalDecimate(sourceObjMesh, destFile, quality)));
+            tasks.Add(Task.Run(() => InternalDecimate(sourceObjMesh, destFile, quality, useQEM)));
 
             destFiles.Add(destFile);
         }
@@ -55,7 +55,7 @@ public static partial class StagesFacade
     }
 
 
-    private static void InternalDecimate(ObjMesh sourceObjMesh, string destPath, float quality)
+    private static void InternalDecimate(ObjMesh sourceObjMesh, string destPath, float quality, bool useQEM)
     {
         quality = MathHelper.Clamp01(quality);
         var sourceVertices = sourceObjMesh.Vertices;
@@ -92,12 +92,34 @@ public static partial class StagesFacade
         stopwatch.Reset();
         stopwatch.Start();
 
-        var algorithm = new FastQuadricMeshSimplification
+        DecimationAlgorithm algorithm;
+        if (useQEM)
         {
-            PreserveSeams = true,
-            Verbose = true,
-            PreserveBorders = true
-        };
+            Console.WriteLine(" -> Using Quadric Error Metrics (QEM) for decimation");
+            algorithm = new QEMDecimationAlgorithm
+            {
+                PreserveBorders = true,
+                RespectSubMeshes = true,
+                EnableNormalCheck = true,
+                MaxNormalDeviationDegrees = 135,
+                PreserveSharpEdges = true,
+                SharpEdgeAngleDegrees = 45,
+                DisallowSharpEdgeCollapse = true,
+                AreaWeightedQuadrics = true,
+                MinTriangleArea = 0.0,     // raise if you still see slivers (units^2)
+                RecomputeNormalsAfter = true
+            };
+        }
+        else
+        {
+            algorithm = new FastQuadricMeshSimplification
+            {
+                PreserveSeams = true,
+                Verbose = true,
+                PreserveBorders = true
+            };
+            Console.WriteLine(" -> Using Fast Quadric Mesh Simplification for decimation");
+        }
 
         var destMesh = MeshDecimation.DecimateMesh(algorithm, sourceMesh, targetTriangleCount);
         stopwatch.Stop();

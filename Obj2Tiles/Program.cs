@@ -58,7 +58,7 @@ namespace Obj2Tiles
                 Console.WriteLine($" => Decimation stage with {opts.LODs} LODs");
                 sw.Start();
 
-                var decimateRes = await StagesFacade.Decimate(opts.Input, destFolderDecimation, opts.LODs, opts.SplitQuality);
+                var decimateRes = await StagesFacade.Decimate(opts.Input, destFolderDecimation, opts.LODs, opts.QEM, opts.SplitQuality);
 
                 Console.WriteLine(" ?> Decimation stage done in {0}", sw.Elapsed);
 

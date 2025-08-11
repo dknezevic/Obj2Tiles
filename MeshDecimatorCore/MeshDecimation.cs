@@ -41,7 +41,11 @@ namespace MeshDecimatorCore
         /// <summary>
         /// The fast quadric mesh simplification algorithm.
         /// </summary>
-        FastQuadricMesh
+        FastQuadricMesh,
+        /// <summary>
+        /// // Quadric Error Metrics (Garland–Heckbert) edge-collapse decimator
+        /// </summary>
+        QEM
     }
     #endregion
 
@@ -66,6 +70,9 @@ namespace MeshDecimatorCore
                 case Algorithm.Default:
                 case Algorithm.FastQuadricMesh:
                     alg = new FastQuadricMeshSimplification();
+                    break;
+                case Algorithm.QEM:
+                    alg = new QEMDecimationAlgorithm();
                     break;
                 default:
                     throw new ArgumentException("The specified algorithm is not supported.", "algorithm");

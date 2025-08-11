@@ -55,6 +55,9 @@ public sealed class Options
 
     [Option("octree", Required = false, HelpText = "Create Octree structure.", Default = false)]
     public bool Octree { get; set; }
+
+    [Option("QEM", Required = false, HelpText = "Use Quadric Error Metrics (Garland–Heckbert) edge-collapse decimator.", Default = false)]
+    public bool QEM { get; set; }
 }
 
 public enum Stage
