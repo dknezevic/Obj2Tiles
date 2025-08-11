@@ -107,7 +107,7 @@ public static partial class StagesFacade
 
                     var tile = new TileElement
                     {
-                        GeometricError = currentLod == 0 ? 0 : baseError / Math.Pow(2, lods - currentLod), //use a geometric error based on the LOD level
+                        GeometricError = currentLod == 0 ? 0 : CalculateGeometricError(box3), //use a geometric error based on the LOD level
                         Refine = "REPLACE",
                         Children = new List<TileElement>(),
                         Content = new Content
@@ -204,6 +204,23 @@ public static partial class StagesFacade
 
         return Math.Pow(dW + dH + dD, lod);
 
+    }
+
+    /// <summary>
+    /// Computes the geometricError for a 3D Tiles tile whose boundingVolume is this Box3.
+    /// Uses half the diagonal length of the box (equivalent to the bounding‐sphere radius).
+    /// </summary>
+    /// <param name="box">The axis‐aligned bounding box of the tile.</param>
+    /// <returns>The geometricError value (in the same units as the box).</returns>
+    public static double CalculateGeometricError(this Box3 box)
+    {
+        // Width, Height, Depth properties on Box3
+        double dx = box.Width;
+        double dy = box.Height;
+        double dz = box.Depth;
+
+        // Geometric error = half the diagonal of the AABB
+        return 0.5 * Math.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     private static void ConvertAllB3dm(string sourcePath, string destPath, int lods)

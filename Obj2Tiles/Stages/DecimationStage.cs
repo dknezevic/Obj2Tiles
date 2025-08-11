@@ -13,7 +13,7 @@ public static partial class StagesFacade
     {
 
         var qualities = splitQuality ?
-            Enumerable.Range(0, lods - 1).Select(i => 1.0f / (float)Math.Pow(2,(i + 1))).ToArray(): 
+            Enumerable.Range(0, lods - 1).Select(i => 1.0f / (float)Math.Pow(4,(i + 1))).ToArray(): 
             Enumerable.Range(0, lods - 1).Select(i => 1.0f - ((i + 1) / (float)lods)).ToArray();
 
         var sourceObjMesh = new ObjMesh();
@@ -36,7 +36,7 @@ public static partial class StagesFacade
             if (File.Exists(destFile))
                 File.Delete(destFile);
 
-            Console.WriteLine(" -> Decimating mesh {0} with quality {1:0.00}", fileName, quality);
+            Console.WriteLine(" -> Decimating mesh {0} with quality {1:0.0000}", fileName, quality);
 
             tasks.Add(Task.Run(() => InternalDecimate(sourceObjMesh, destFile, quality)));
 
