@@ -30,15 +30,27 @@ public static partial class StagesFacade
 
         for (var index = 0; index < qualities.Length; index++)
         {
-            var quality = qualities[index];
             var destFile = Path.Combine(destPath, Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj");
 
-            if (File.Exists(destFile))
-                File.Delete(destFile);
+            //we can use previously decimated files if they exist in the ./decimated folder
+            string decimatedFilePath = Path.Combine(Path.GetFullPath("./decimated"), Path.GetFileNameWithoutExtension(sourcePath), Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj");
+            if (File.Exists(decimatedFilePath)){
 
-            Console.WriteLine(" -> Decimating mesh {0} with quality {1:0.0000}", fileName, quality);
+                Console.WriteLine(" -> Previously decimated file found. Using it: {0}", Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj");
+                File.Copy(decimatedFilePath, Path.Combine(destPath, Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj"));
+            }
+            else
+            {
+                var quality = qualities[index];
+                
 
-            tasks.Add(Task.Run(() => InternalDecimate(sourceObjMesh, destFile, quality, useQEM)));
+                if (File.Exists(destFile))
+                    File.Delete(destFile);
+
+                Console.WriteLine(" -> Decimating mesh {0} with quality {1:0.0000}", fileName, quality);
+
+                tasks.Add(Task.Run(() => InternalDecimate(sourceObjMesh, destFile, quality, useQEM)));
+            }
 
             destFiles.Add(destFile);
         }
