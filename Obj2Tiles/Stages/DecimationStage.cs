@@ -33,11 +33,18 @@ public static partial class StagesFacade
             var destFile = Path.Combine(destPath, Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj");
 
             //we can use previously decimated files if they exist in the ./decimated folder
-            string decimatedFilePath = Path.Combine(Path.GetFullPath("./decimated"), Path.GetFileNameWithoutExtension(sourcePath), Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj");
+            string destFileName = Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj";
+            string decimatedFilePath = Path.Combine(Path.GetFullPath("./decimated"), Path.GetFileNameWithoutExtension(sourcePath), destFileName);
             if (File.Exists(decimatedFilePath)){
 
-                Console.WriteLine(" -> Previously decimated file found. Using it: {0}", Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj");
-                File.Copy(decimatedFilePath, Path.Combine(destPath, Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj"));
+
+                Console.WriteLine(" -> Previously decimated file found. Using it: {0}", destFileName);
+                File.Copy(decimatedFilePath, Path.Combine(destPath, destFileName));
+                if (File.Exists(decimatedFilePath + ".mtl"))
+                {
+                    //copy the mtl file if it exists
+                    File.Copy(decimatedFilePath + ".mtl", Path.Combine(destPath, destFileName + ".mtl"));
+                }
             }
             else
             {
