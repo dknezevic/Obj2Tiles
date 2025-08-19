@@ -51,8 +51,12 @@ public class MeshUtils
                         double.Parse(segs[2], CultureInfo.InvariantCulture));
                     
                     if (vtx.X < 0 || vtx.Y < 0)
-                        throw new Exception("Invalid texture coordinates: " + vtx);
-                    
+                    {
+                        //will allow it because of extreme decimation
+                        vtx = new Vertex2(Math.Max(0, vtx.X), Math.Max(0, vtx.Y));
+                    }
+                    //throw new Exception("Invalid texture coordinates: " + vtx);
+
                     textureVertices.Add(vtx);
                     break;
                 case "vn" when segs.Length == 3:

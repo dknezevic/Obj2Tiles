@@ -58,6 +58,9 @@ public sealed class Options
 
     [Option("QEM", Required = false, HelpText = "Use Quadric Error Metrics (Garland–Heckbert) edge-collapse decimator.", Default = false)]
     public bool QEM { get; set; }
+
+    [Option("jpeg-quality", Required = false, HelpText = "Optionally specify jpeg encoder quality for all LODs separated using a comma. e.g. 75,50,25", Separator = ',')]
+    public IEnumerable<int> JpegQuality { get; set; } = new List<int>();
 }
 
 public enum Stage

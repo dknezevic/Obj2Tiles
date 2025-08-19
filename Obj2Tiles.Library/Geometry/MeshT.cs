@@ -440,7 +440,12 @@ public class MeshT : IMesh
         });
     }
 
-    private static readonly JpegEncoder encoder = new JpegEncoder { Quality = 75 };
+    private static JpegEncoder encoder = new JpegEncoder { Quality = 75 };
+
+    public static void UpdateJpegEncoderQuality(int quality)
+    {
+        encoder = new JpegEncoder { Quality = quality };
+    }
 
     private void BinPackTextures(string targetFolder, int materialIndex, IReadOnlyList<List<int>> clusters,
         IDictionary<Vertex2, int> newTextureVertices, ICollection<Task> tasks)

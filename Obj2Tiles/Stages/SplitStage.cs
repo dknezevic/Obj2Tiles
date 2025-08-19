@@ -8,7 +8,7 @@ namespace Obj2Tiles.Stages;
 public static partial class StagesFacade
 {
     public static async Task<Dictionary<string, Box3>[]> Split(string[] sourceFiles, string destFolder, int divisions,
-        bool zsplit, bool isOctree, Box3 bounds, bool keepOriginalTextures = false)
+        bool zsplit, bool isOctree, Box3 bounds, IEnumerable<int> jpegQuality, bool keepOriginalTextures = false)
     {
       
         var tasks = new List<Task<Dictionary<string, Box3>>>();
@@ -24,6 +24,15 @@ public static partial class StagesFacade
 
             //each LOD has one less division than the previous one (octree)
             int numberOfDivisions = isOctree ? divisions + sourceFiles.Length - index - 1 : divisions;
+
+            
+            if (textureStrategy == TexturesStrategy.Repack || textureStrategy == TexturesStrategy.RepackCompressed)
+            {
+                if (jpegQuality.Count() > index)
+                {
+                    MeshT.UpdateJpegEncoderQuality(jpegQuality.ToList()[index]);
+                }
+            }
 
             var splitTask = Split(file, dest, numberOfDivisions, zsplit, bounds, textureStrategy);
 
