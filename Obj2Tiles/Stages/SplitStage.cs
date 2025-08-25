@@ -68,7 +68,7 @@ public static partial class StagesFacade
             Console.WriteLine(" -> Skipping split stage, just compressing textures and cleaning up the mesh");
 
             if (mesh is MeshT t)
-                t.TexturesStrategy = TexturesStrategy.Compress;
+                t.TexturesStrategy = TexturesStrategy.RepackCompressed;
             
             mesh.WriteObj(Path.Combine(destPath, $"{mesh.Name}.obj"));
             
