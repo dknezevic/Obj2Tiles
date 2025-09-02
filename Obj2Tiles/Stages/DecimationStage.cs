@@ -30,33 +30,34 @@ public static partial class StagesFacade
 
         for (var index = 0; index < qualities.Length; index++)
         {
-            var destFile = Path.Combine(destPath, Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj");
+            var destFolder = Path.Combine(destPath, "LOD-" + index);
+            if (!Directory.Exists(destFolder))
+                Directory.CreateDirectory(destFolder);
+
+            var destFile = Path.Combine(destFolder, Path.GetFileName(sourcePath));
 
             //we can use previously decimated files if they exist in the ./decimated folder
-            string destFileName = Path.GetFileNameWithoutExtension(sourcePath) + "_" + index + ".obj";
-            string decimatedFilePath = Path.Combine(Path.GetFullPath("./decimated"), Path.GetFileNameWithoutExtension(sourcePath), destFileName);
-            if (File.Exists(decimatedFilePath)){
-
-
+            string destFileName = Path.GetFileName(destFile);
+            string decimatedFolderPath = Path.GetFullPath("./decimated/LOD-" + index);
+            string decimatedFilePath = Path.Combine(decimatedFolderPath, Path.GetFileNameWithoutExtension(sourcePath), destFileName);
+            if (File.Exists(decimatedFilePath))
+            {
                 Console.WriteLine(" -> Previously decimated file found. Using it: {0}", destFileName);
-                File.Copy(decimatedFilePath, Path.Combine(destPath, destFileName));
-                if (File.Exists(decimatedFilePath + ".mtl"))
-                {
-                    //copy the mtl file if it exists
-                    File.Copy(decimatedFilePath + ".mtl", Path.Combine(destPath, destFileName + ".mtl"));
-                }
+                File.Copy(decimatedFilePath, destFile);
+                Console.WriteLine(" -> Copying obj dependencies");
+                Utils.CopyObjDependencies(decimatedFilePath, destFolder);
             }
             else
             {
                 var quality = qualities[index];
-                
-
                 if (File.Exists(destFile))
                     File.Delete(destFile);
 
                 Console.WriteLine(" -> Decimating mesh {0} with quality {1:0.0000}", fileName, quality);
 
                 tasks.Add(Task.Run(() => InternalDecimate(sourceObjMesh, destFile, quality, useQEM)));
+                Console.WriteLine(" -> Copying obj dependencies");
+                Utils.CopyObjDependencies(sourcePath, destFolder);
             }
 
             destFiles.Add(destFile);
