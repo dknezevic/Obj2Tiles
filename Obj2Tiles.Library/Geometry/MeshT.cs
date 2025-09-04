@@ -451,6 +451,8 @@ public class MeshT : IMesh
     private void BinPackTextures(string targetFolder, int materialIndex, IReadOnlyList<List<int>> clusters,
         IDictionary<Vertex2, int> newTextureVertices, ICollection<Task> tasks)
     {
+        const int PADDING = 2; // <-- bleed ring
+
         var material = _materials[materialIndex];
 
         if (material.Texture == null && material.NormalMap == null) return;
@@ -463,7 +465,7 @@ public class MeshT : IMesh
 
         var clustersRects = clusters.Select(GetClusterRect).ToArray();
 
-        CalculateMaxMinAreaRect(clustersRects, textureWidth, textureHeight, out var maxWidth, out var maxHeight,
+        CalculateMaxMinAreaRect(clustersRects, textureWidth, textureHeight, PADDING, out var maxWidth, out var maxHeight,
             out var textureArea);
 
         Debug.WriteLine("Texture area: " + textureArea);
@@ -486,8 +488,6 @@ public class MeshT : IMesh
 
         string? textureFileName = null, normalMapFileName = null, newPathTexture = null, newPathNormalMap = null;
         int count = 0;
-
-        const int PADDING = 2; // <-- bleed ring
 
         for (int i = 0; i < clusters.Count; i++)
         {
@@ -677,34 +677,42 @@ public class MeshT : IMesh
         if (material.NormalMap != null) { tasks.Add(saveTaskNormalMap); saveTaskNormalMap.Start(); material.NormalMap = normalMapFileName; }
     }
 
-    private void CalculateMaxMinAreaRect(RectangleF[] clustersRects, int textureWidth, int textureHeight,
-        out double maxWidth, out double maxHeight, out double textureArea)
+    // Adds bleed padding to each chart when estimating total area and max dims.
+    private void CalculateMaxMinAreaRect(
+        RectangleF[] clustersRects,
+        int textureWidth,
+        int textureHeight,
+        int paddingPx,                        // <-- NEW
+        out double maxWidth,                  // pixels (already padded)
+        out double maxHeight,                 // pixels (already padded)
+        out double textureArea)               // pixels^2 (sum of padded chart areas)
     {
-        maxWidth = 0;
-        maxHeight = 0;
-        textureArea = 0;
+        long areaPx = 0;
+        int maxW = 0;
+        int maxH = 0;
 
-        for (var index = 0; index < clustersRects.Length; index++)
+        for (int index = 0; index < clustersRects.Length; index++)
         {
             var rect = clustersRects[index];
 
-            textureArea += Math.Max(Math.Ceiling(rect.Width * textureWidth), 1) *
-                           Math.Max(Math.Ceiling(rect.Height * textureHeight), 1);
+            // Chart size in pixels from UV fraction
+            int w = Math.Max(1, (int)Math.Ceiling(rect.Width * textureWidth));
+            int h = Math.Max(1, (int)Math.Ceiling(rect.Height * textureHeight));
 
-            if (rect.Width > maxWidth)
-            {
-                maxWidth = rect.Width;
-            }
+            // Add padding on both sides
+            int wPad = Math.Max(1, w + 2 * paddingPx);
+            int hPad = Math.Max(1, h + 2 * paddingPx);
 
-            if (rect.Height > maxHeight)
-            {
-                maxHeight = rect.Height;
-            }
+            areaPx += (long)wPad * (long)hPad;
+            if (wPad > maxW) maxW = wPad;
+            if (hPad > maxH) maxH = hPad;
         }
 
-        maxWidth = Math.Ceiling(maxWidth * textureWidth);
-        maxHeight = Math.Ceiling(maxHeight * textureHeight);
+        maxWidth = maxW;          // already in pixels (no further multiply)
+        maxHeight = maxH;         // already in pixels (no further multiply)
+        textureArea = areaPx;     // in pixels^2
     }
+
 
     /// <summary>
     /// Calculates the bounding box of a set of points.
