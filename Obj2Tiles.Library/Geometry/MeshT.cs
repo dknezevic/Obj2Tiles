@@ -502,12 +502,12 @@ public class MeshT : IMesh
 
             // ---- UDIM tile localization ----
             // Determine which UDIM tile this cluster belongs to.
-            int tileU = (int)Math.Floor(u0 + 1e-9);
-            int tileV = (int)Math.Floor(v0 + 1e-9);
+            int tileU = (int)Math.Floor(u0 + 1e-4);
+            int tileV = (int)Math.Floor(v0 + 1e-4);
 
             // If a cluster spans multiple tiles, consider splitting by tile;
             // for now we just clamp to this tile (assert/log to catch it).
-            if (Math.Floor(u1 - 1e-9) != tileU || Math.Floor(v1 - 1e-9) != tileV)
+            if (Math.Floor(u1 - 1e-4) != tileU || Math.Floor(v1 - 1e-4) != tileV)
             {
                 Debug.WriteLine($"[UDIM] Cluster spans multiple tiles: U[{u0},{u1}] V[{v0},{v1}]");
             }
